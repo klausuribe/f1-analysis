@@ -1,5 +1,11 @@
 *.ipynb
 __pycache__
+.venv/
 data/cache/
 data/raw/
+
+# Secretos y credenciales
+.env
+*-data-eng-*.json
+mci506-klaus-data-eng-496800-2f4fc2c21522.json
 
