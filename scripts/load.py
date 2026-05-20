@@ -17,6 +17,8 @@ from dotenv import load_dotenv
 
 from utils import GCS_BUCKET, RAW_DIR, RAW_PREFIX, gcs_client
 
+# Local: .env en el repo o un nivel arriba (workspace con notebook)
+load_dotenv(ROOT / ".env")
 load_dotenv(ROOT.parent / ".env")
 
 # Patrón: {dataset}_{year}_{slug}.parquet  o  {dataset}_{year}.parquet

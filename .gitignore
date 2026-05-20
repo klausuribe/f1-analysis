@@ -3,7 +3,6 @@ __pycache__
 .venv/
 data/cache/
 data/raw/
-
 # Secretos y credenciales
 .env
 *-data-eng-*.json

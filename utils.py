@@ -46,14 +46,27 @@ def to_parquet(df: pd.DataFrame, path: Path) -> None:
 def gcs_client() -> storage.Client:
     """Autentica y retorna un cliente de Google Cloud Storage.
 
-    Lee la service account del JSON en la variable de entorno GCP_SA_KEY.
-    Reutilizable para cualquier operación en GCS (upload, download, etc.).
+    Orden de autenticación:
+    1. JSON en GCP_SA_KEY (local .env o secret de GitHub Actions)
+    2. GOOGLE_APPLICATION_CREDENTIALS (p. ej. google-github-actions/auth en CI)
     """
     sa_key = os.environ.get("GCP_SA_KEY") or os.environ.get("GCP_SA_key")
-    if not sa_key:
-        raise EnvironmentError("GCP_SA_KEY no está definida (revisa tu .env)")
-    info = json.loads(sa_key)
-    creds = service_account.Credentials.from_service_account_info(
-        info, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    if sa_key:
+        info = json.loads(sa_key)
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        return storage.Client(credentials=creds, project=info["project_id"])
+
+    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if creds_path and Path(creds_path).is_file():
+        return storage.Client()
+
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        raise EnvironmentError(
+            "Sin credenciales GCP en CI. Configura el secret GCP_SA_KEY en "
+            "Settings → Secrets and variables → Actions (valor: JSON completo de la service account)."
+        )
+    raise EnvironmentError(
+        "GCP_SA_KEY no está definida (revisa tu .env) o falta GOOGLE_APPLICATION_CREDENTIALS"
     )
-    return storage.Client(credentials=creds, project=info["project_id"])
