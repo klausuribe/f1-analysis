@@ -29,12 +29,19 @@ jobs:
           DEV_MODE: ${{ github.ref_name != 'main' && 'true' || 'false' }}
         run: python scripts/extract.py
 
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Verificar secret GCP_SA_KEY
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ]; then
+            echo "::error::GCP_SA_KEY no está definido o está vacío."
+            echo "Ve a Settings → Secrets and variables → Actions → New repository secret"
+            echo "Nombre: GCP_SA_KEY | Valor: JSON completo de la service account (sin comillas extra)."
+            exit 1
+          fi
 
       - name: Load to GCS
         env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           DEV_MODE: ${{ github.ref_name != 'main' && 'true' || 'false' }}
         run: python scripts/load.py
