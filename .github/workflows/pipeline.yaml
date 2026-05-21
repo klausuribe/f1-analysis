@@ -1,0 +1,47 @@
+name: Extract and Load F1 Data
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  extract_load:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache FastF1 data
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: fastf1
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Extract
+        env:
+          DEV_MODE: ${{ github.ref_name != 'main' && 'true' || 'false' }}
+        run: python scripts/extract.py
+
+      - name: Verificar secret GCP_SA_KEY
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ]; then
+            echo "::error::GCP_SA_KEY no está definido o está vacío."
+            echo "Ve a Settings → Secrets and variables → Actions → New repository secret"
+            echo "Nombre: GCP_SA_KEY | Valor: JSON completo de la service account (sin comillas extra)."
+            exit 1
+          fi
+
+      - name: Load to GCS
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DEV_MODE: ${{ github.ref_name != 'main' && 'true' || 'false' }}
+        run: python scripts/load.py
